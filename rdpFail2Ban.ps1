@@ -10,6 +10,7 @@ $LogName = "Security"
 $EventID = 4625,4624 # Windows安全事件ID
 $TimeSleepSeconds = 60
 $FailedAttempsLimit = 3
+$WhiteListIPs = @("127.0.0.1", "127.0.0.2")
 $FirewallRuleName = "BlockedRDPAttempt_IPs"
 $newBlockIPs = @()
 $FailedIPs = @{}
@@ -49,6 +50,7 @@ while ($true) {
 
     # 过滤出失败次数达到限制的IP并进行处理
     $BlockedIPs = $FailedIPs.Keys | Where-Object { $FailedIPs[$_] -ge $FailedAttempsLimit }
+    $BlockedIPs = $BlockedIPs | Where-Object { $_ -notin $WhiteListIPs }
     
     if (Compare-Object -ReferenceObject $BlockedIPs -DifferenceObject $newBlockIPs -PassThru) {
         foreach ($ip in $BlockedIPs) {
