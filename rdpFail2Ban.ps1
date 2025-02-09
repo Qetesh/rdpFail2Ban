@@ -18,6 +18,9 @@ $FailedIPs = @{}
 $startTime = (Get-Date).Add(-(New-TimeSpan -Hours 1))
 $endTime = Get-Date
 
+# 检查防火墙规则是否存在
+$ruleExists = Get-NetFirewallRule -DisplayName $FirewallRuleName -ErrorAction SilentlyContinue
+
 # 创建一个无限循环，每分钟运行一次
 while ($true) {
     # 计算时间间隔
@@ -54,13 +57,11 @@ while ($true) {
     
     if (Compare-Object -ReferenceObject $BlockedIPs -DifferenceObject $newBlockIPs -PassThru) {
         foreach ($ip in $BlockedIPs) {
-            # 检查防火墙规则是否存在
-            $ruleExists = Get-NetFirewallRule -DisplayName $FirewallRuleName -ErrorAction SilentlyContinue
-            
             # 如果规则不存在，则创建一个新规则
             if (-not $ruleExists) {
                 New-NetFirewallRule -DisplayName $FirewallRuleName -Direction Inbound -Action Block -RemoteAddress $ip -Protocol TCP -LocalPort 3389
                 Write-Host -ForegroundColor Blue "$(Get-Date) Created new Firewall rule for IP: $ip"
+				$ruleExists = Get-NetFirewallRule -DisplayName $FirewallRuleName -ErrorAction SilentlyContinue
             } else {
                 # 如果规则已存在，更新规则以添加新IP
                 $existingBlockIPs = (Get-NetFirewallRule -DisplayName $FirewallRuleName | Get-NetFirewallAddressFilter).RemoteAddress
